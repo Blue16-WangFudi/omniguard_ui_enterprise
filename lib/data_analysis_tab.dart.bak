@@ -1,0 +1,34 @@
+// 数据分析选项卡
+import 'package:flutter/material.dart';
+
+class DataAnalysisTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bar_chart, size: 64, color: Colors.orange),
+          SizedBox(height: 16),
+          Text(
+            '数据分析页面',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'HarmonyOS_Sans',
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '此处显示数据分析图表和统计信息',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              fontFamily: 'HarmonyOS_Sans',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
