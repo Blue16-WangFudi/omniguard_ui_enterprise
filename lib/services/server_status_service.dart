@@ -201,6 +201,7 @@ class ServerStatusService {
         //     ]
         //   }
         // };
+        // print(data);
         _statusController.add(data);
       } else {
         if (_lastStatus.isEmpty){

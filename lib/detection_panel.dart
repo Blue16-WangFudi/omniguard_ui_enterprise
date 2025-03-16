@@ -664,7 +664,7 @@ class _DetectionPanelState extends State<DetectionPanel> with SingleTickerProvid
                       ),
                       SizedBox(height: 12),
                       Text(
-                        '我可以帮助您检测内容风险。请发送文本或文件给我。',
+                        '我可以帮助您检测内容风险，例如诈骗短信、聊天记录、AI深度伪造等',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.black54,

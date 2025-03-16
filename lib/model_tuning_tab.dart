@@ -182,9 +182,9 @@ class _ModelTuningTabState extends State<ModelTuningTab> {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMethodCard(
-            'DPO偏好训练',
-            '引入人反馈，降低幻觉，使得模型输出更符合人类偏好',
-            'DPO',
+            'GRPO训练',
+            '更加先进的强化学习算法，引入人类反馈，降低幻觉，使得模型输出更符合人类偏好',
+            'GRPO',
             Colors.blue,
           ),
         ),

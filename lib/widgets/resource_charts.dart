@@ -13,9 +13,10 @@ class ResourceCharts {
   ) {
     return _buildLineChart(
       title: title,
+      maxY: 100,
       lines: [
-        _buildLine(downloadData, Colors.green),
-        _buildLine(uploadData, Colors.red),
+        _buildLine(downloadData, Colors.green.shade400),
+        _buildLine(uploadData, Colors.red.shade400),
       ],
       yAxisName: 'MB/s',
       legends: ['下载', '上传'],
@@ -26,7 +27,7 @@ class ResourceCharts {
   static Widget buildCpuChart(List<double> cpuData, String title) {
     return _buildLineChart(
       title: title,
-      lines: [_buildLine(cpuData, Colors.blue)],
+      lines: [_buildLine(cpuData, Colors.blue.shade500)],
       yAxisName: '%',
       maxY: 100,
       legends: ['CPU'],
@@ -37,7 +38,7 @@ class ResourceCharts {
   static Widget buildMemoryChart(List<double> memoryData, String title) {
     return _buildLineChart(
       title: title,
-      lines: [_buildLine(memoryData, Colors.purple)],
+      lines: [_buildLine(memoryData, Colors.purple.shade400)],
       yAxisName: '%',
       maxY: 100,
       legends: ['内存'],
@@ -48,10 +49,10 @@ class ResourceCharts {
   static Widget buildGpuMemoryChart(List<double> gpuMemoryData, String title) {
     return _buildLineChart(
       title: title,
-      lines: [_buildLine(gpuMemoryData, Colors.deepOrange)],
+      lines: [_buildLine(gpuMemoryData, Colors.deepOrange.shade400)],
       yAxisName: '%',
       maxY: 100,
-      legends: ['GPU内存'],
+      legends: ['显存'],
     );
   }
 
@@ -63,25 +64,50 @@ class ResourceCharts {
     required List<String> legends,
     double? maxY,
   }) {
+    final bgColor = Colors.white;
+    final gridColor = Colors.grey.withOpacity(0.15);
+    
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+      elevation: 0, 
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200), 
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [bgColor, bgColor.withOpacity(0.95)],
+          ),
+        ),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Chart title
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'HarmonyOS_Sans',
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: lines.isNotEmpty ? lines[0].color : Colors.blue,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'HarmonyOS_Sans',
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-            // Chart
             SizedBox(
               height: 180,
               child: LineChart(
@@ -92,14 +118,16 @@ class ResourceCharts {
                     horizontalInterval: maxY != null ? maxY / 5 : null,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: gridColor,
                         strokeWidth: 1,
+                        dashArray: [5, 5], 
                       );
                     },
                     getDrawingVerticalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: gridColor,
                         strokeWidth: 1,
+                        dashArray: [5, 5], 
                       );
                     },
                   ),
@@ -110,29 +138,30 @@ class ResourceCharts {
                     leftTitles: AxisTitles(
                       axisNameWidget: Text(
                         yAxisName,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                       ),
-                      axisNameSize: 24,
+                      axisNameSize: 12,
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
+                        reservedSize: 25,
+                        interval: maxY != null ? maxY / 4 : null,
                         getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Text(
+                              value.toInt().toString(),
+                              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                              textAlign: TextAlign.end,
+                            ),
                           );
                         },
                       ),
                     ),
                     bottomTitles: AxisTitles(
-                      axisNameWidget: Text(
-                        '时间 (秒)',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                      ),
-                      axisNameSize: 24,
+                      axisNameSize: 0, 
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 30,
+                        reservedSize: 20, 
                         getTitlesWidget: (value, meta) {
                           if (value.toInt() % 10 == 0) {
                             return Text(
@@ -147,7 +176,29 @@ class ResourceCharts {
                   ),
                   borderData: FlBorderData(
                     show: true,
-                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    border: Border.all(color: gridColor),
+                  ),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipMargin: 8,
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      tooltipRoundedRadius: 8,
+                      tooltipBorder: BorderSide(color: Colors.transparent),
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          final index = barSpot.barIndex;
+                          final legend = index < legends.length ? legends[index] : '';
+                          return LineTooltipItem(
+                            '$legend: ${barSpot.y.toStringAsFixed(1)}',
+                            TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              backgroundColor: Colors.grey[700],
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
                   ),
                   minX: 0,
                   maxX: maxDataPoints.toDouble() - 1,
@@ -157,13 +208,17 @@ class ResourceCharts {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            // Legend
+            const SizedBox(height: 8), 
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(
+                  '时间 (秒)',
+                  style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                ),
+                const SizedBox(width: 20),
                 for (int i = 0; i < lines.length; i++) ...[                  
-                  if (i > 0) const SizedBox(width: 24),
+                  if (i > 0) const SizedBox(width: 16),
                   Row(
                     children: [
                       Container(
@@ -171,14 +226,14 @@ class ResourceCharts {
                         height: 12,
                         decoration: BoxDecoration(
                           color: lines[i].color,
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(2), 
                         ),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         i < legends.length ? legends[i] : '',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.grey[700],
                           fontFamily: 'HarmonyOS_Sans',
                         ),
@@ -204,14 +259,26 @@ class ResourceCharts {
 
     return LineChartBarData(
       spots: spots,
-      isCurved: true,
+      isCurved: false, 
       color: color,
-      barWidth: 2,
-      isStrokeCapRound: true,
-      dotData: const FlDotData(show: false),
+      barWidth: 2.5, 
+      isStrokeCapRound: false, 
+      dotData: FlDotData(
+        show: false,
+        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+          radius: 2,
+          color: color,
+          strokeWidth: 1,
+          strokeColor: Colors.white,
+        ),
+      ),
       belowBarData: BarAreaData(
         show: true,
-        color: color.withOpacity(0.1),
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
     );
   }

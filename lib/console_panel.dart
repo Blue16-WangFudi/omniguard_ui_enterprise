@@ -71,8 +71,10 @@ class _ConsolePanelState extends State<ConsolePanel> {
         // 底部内容区域
         Expanded(
           child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 0, 0, 0),
             color: Colors.white,
-            child: _buildTabContent(),
+            child: 
+                _buildTabContent(),
           ),
         ),
       ],
