@@ -7,7 +7,7 @@ import '../models/chat_instance_model.dart';
 import 'obs_service.dart';
 
 class DetectorService {
-  static const String _apiUrl = 'http://47.119.178.225:8090/api/v4/detector/multimodal';
+  static const String _apiUrl = 'http://47.119.178.225:8090/api/v5/detector/multimodal';
   static const String _token = '0c97a6b8-9142-486c-a304-83a3e745614b';
   static const bool _debugMode = true; // Enable debug output
   
@@ -128,8 +128,8 @@ class DetectorService {
           "detectionType": detectionType,
           "detectionMode": detectionMode,
           "dataSource": {
-            "province": "ChongQing",
-            "city": "BeiBei",
+            "province": "广东",
+            "city": "深圳",
             "phoneNum": "15281991073"
           },
           "objects": objects

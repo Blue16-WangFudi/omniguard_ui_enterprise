@@ -6,9 +6,11 @@ import 'utils/file_utils.dart';
 import 'models/file_model.dart';
 import 'services/obs_service.dart';
 import 'services/detector_service.dart';
+import 'services/report_service.dart';
 import 'widgets/risk_report_card.dart';
 import 'models/detector_model.dart';
 import 'models/chat_instance_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DetectionPanel extends StatefulWidget {
   final ChatInstance chatInstance;
@@ -265,6 +267,12 @@ class _DetectionPanelState extends State<DetectionPanel> with SingleTickerProvid
     
     // Only proceed if there's a message or files to send
     if (message.isEmpty && messageFiles.isEmpty) return;
+    
+    // 检查是否是生成报告的特殊命令
+    if (message == "/generate") {
+      _generateReport();
+      return;
+    }
 
     // Create a new message
     final userMessage = ChatMessage(
@@ -572,6 +580,167 @@ class _DetectionPanelState extends State<DetectionPanel> with SingleTickerProvid
     }
   }
 
+  // 生成风险检测报告
+  Future<void> _generateReport() async {
+    // 创建用户消息
+    final userMessage = ChatMessage(
+      text: "/generate",
+      isUser: true,
+    );
+    
+    setState(() {
+      // 添加用户消息到聊天实例
+      widget.chatInstance.messages.add(userMessage);
+      
+      // 更新本地消息引用用于UI
+      _messages = widget.chatInstance.messages;
+      
+      // 清除输入和文件
+      _textController.clear();
+      _selectedFiles = [];
+      _hasContent = false;
+      _showWelcomeMessage = false;
+      _isWaitingForResponse = true;
+
+      // 强制滚动到底部
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    });
+    
+    // 添加初始的"思考中"系统消息
+    final thinkingMessage = ChatMessage(
+      text: "系统正在为您生成风险检测报告...",
+      isUser: false,
+      thinkingStatus: ThinkingStatus.thinking,
+    );
+    
+    setState(() {
+      // 添加思考中消息到聊天实例
+      widget.chatInstance.messages.add(thinkingMessage);
+      
+      // 强制滚动到底部
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    });
+    
+    try {
+      // 从聊天消息中收集所有检测ID
+      final detectionIds = ReportService.collectDetectionIdsFromMessages(widget.chatInstance.messages);
+      
+      if (detectionIds.isEmpty) {
+        // 没有检测ID，无法生成报告
+        setState(() {
+          // 更新思考中消息为错误消息
+          final lastIndex = widget.chatInstance.messages.length - 1;
+          if (lastIndex >= 0 && widget.chatInstance.messages[lastIndex].thinkingStatus == ThinkingStatus.thinking) {
+            // 创建新的错误消息
+            final errorMessage = ChatMessage(
+              text: "无法生成风险检测报告。当前会话中没有检测结果。",
+              isUser: false,
+              thinkingStatus: ThinkingStatus.completed,
+            );
+            
+            // 替换思考中消息为错误消息
+            widget.chatInstance.messages.removeLast();
+            widget.chatInstance.messages.add(errorMessage);
+          }
+          
+          _isWaitingForResponse = false;
+        });
+        return;
+      }
+      
+      print('收集到的检测ID: $detectionIds');
+      
+      // 调用报告生成API
+      final reportUrl = await ReportService.generateReport(detectionIds);
+      
+      if (reportUrl != null) {
+        // 成功生成报告
+        setState(() {
+          // 更新思考中消息为成功消息
+          final lastIndex = widget.chatInstance.messages.length - 1;
+          if (lastIndex >= 0 && widget.chatInstance.messages[lastIndex].thinkingStatus == ThinkingStatus.thinking) {
+            // 创建新的成功消息，包含报告URL
+            final successMessage = ChatMessage(
+              text: "风险检测报告已生成",
+              isUser: false,
+              thinkingStatus: ThinkingStatus.completed,
+              reportUrl: reportUrl,
+            );
+            
+            // 替换思考中消息为成功消息
+            widget.chatInstance.messages.removeLast();
+            widget.chatInstance.messages.add(successMessage);
+          }
+          
+          _isWaitingForResponse = false;
+        });
+        
+        // 显示报告查看器
+        _showReportViewer(reportUrl);
+      } else {
+        // 生成报告失败
+        setState(() {
+          // 更新思考中消息为错误消息
+          final lastIndex = widget.chatInstance.messages.length - 1;
+          if (lastIndex >= 0 && widget.chatInstance.messages[lastIndex].thinkingStatus == ThinkingStatus.thinking) {
+            // 创建新的错误消息
+            final errorMessage = ChatMessage(
+              text: "生成风险检测报告失败。请稍后重试。",
+              isUser: false,
+              thinkingStatus: ThinkingStatus.completed,
+            );
+            
+            // 替换思考中消息为错误消息
+            widget.chatInstance.messages.removeLast();
+            widget.chatInstance.messages.add(errorMessage);
+          }
+          
+          _isWaitingForResponse = false;
+        });
+      }
+    } catch (e) {
+      // 处理生成报告过程中的任何错误
+      setState(() {
+        // 更新思考中消息为错误消息
+        final lastIndex = widget.chatInstance.messages.length - 1;
+        if (lastIndex >= 0 && widget.chatInstance.messages[lastIndex].thinkingStatus == ThinkingStatus.thinking) {
+          // 创建新的错误消息
+          final errorMessage = ChatMessage(
+            text: "生成风险检测报告时发生错误: ${e.toString()}",
+            isUser: false,
+            thinkingStatus: ThinkingStatus.completed,
+          );
+          
+          // 替换思考中消息为错误消息
+          widget.chatInstance.messages.removeLast();
+          widget.chatInstance.messages.add(errorMessage);
+        }
+        
+        _isWaitingForResponse = false;
+      });
+    }
+    
+    // 更新聊天实例中的消息
+    widget.onUpdateInstance(widget.chatInstance);
+  }
+  
+  // 显示报告查看器 TODO
+void _showReportViewer(String reportUrl) async {
+  print("检测报告生成成果，下载URL为：" + reportUrl);
+
+  final Uri url = Uri.parse(reportUrl);
+
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url, mode: LaunchMode.externalApplication); // 使用默认浏览器打开
+  } else {
+    print("无法打开报告 URL");
+  }
+}
+  
   void _addDetectionResultMessage(List<DetectionResult> results) {
     if (results.isEmpty) return;
 
@@ -904,7 +1073,10 @@ class _DetectionPanelState extends State<DetectionPanel> with SingleTickerProvid
                                 ),
                               ),
                               // Detection type button row
-                              Row(
+                              SizedBox(
+                                height:29,
+                                child:                               
+                                Row(
                                 children: [
                                   TextButton(
                                     onPressed: () {
@@ -954,6 +1126,8 @@ class _DetectionPanelState extends State<DetectionPanel> with SingleTickerProvid
                                   ),
                                 ],
                               ),
+
+                              )
                             ],
                           ),
                         ),

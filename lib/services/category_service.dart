@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/category_model.dart';
 
 class CategoryService extends ChangeNotifier {
-  static const String _categoryApiUrl = 'http://47.119.178.225:8090/api/v4/detector/result/category';
+  static const String _categoryApiUrl = 'http://47.119.178.225:8090/api/v5/detector/result/category';
   static const String _token = '0c97a6b8-9142-486c-a304-83a3e745614b';
   static const bool _debugMode = true; // Enable debug output
   

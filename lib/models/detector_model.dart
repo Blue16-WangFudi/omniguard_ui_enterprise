@@ -85,7 +85,7 @@ class DetectionResult {
 
 // Detection data model
 class DetectionData {
-  final String id;
+  String id;
   final double confidence;
   final String category;
   final DetectionAnalysis analysis;
@@ -312,10 +312,12 @@ class DetectorResponse {
 
   // Create detector response from JSON
   factory DetectorResponse.fromJson(Map<String, dynamic> json) {
+    DetectionData detectionData = DetectionData.fromJson(json['data']['summary'] ?? {});
+    detectionData.id=json['data']['id']?? '';
     return DetectorResponse(
       status: json['status'] ?? '',
       message: json['message'] ?? '',
-      data: DetectionData.fromJson(json['data'] ?? {}),
+      data: detectionData,
     );
   }
 }

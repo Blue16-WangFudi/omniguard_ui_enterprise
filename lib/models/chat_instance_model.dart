@@ -66,6 +66,7 @@ class ChatMessage {
   final DetectionData? detectionData; // Add detection data field
   final ThinkingStatus? thinkingStatus; // Add thinking status field
   final String? detectionMode; // Store the detection mode used when sending the message
+  final String? reportUrl; // 添加报告URL字段
 
   ChatMessage({
     required this.text,
@@ -74,6 +75,7 @@ class ChatMessage {
     this.detectionData,
     this.thinkingStatus,
     this.detectionMode,
+    this.reportUrl, // 初始化报告URL字段
   }) : timestamp = DateTime.now();
 }
 

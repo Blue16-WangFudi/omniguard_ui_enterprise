@@ -667,7 +667,7 @@ void _handleTimeRangeChanged(TimeRange range) {
       )
     );
   }
-
+  
   Widget _buildInfoRow(String label, String value, {IconData? icon, Color? iconColor}) {
     return Padding(
       padding: const EdgeInsets.only(top:6,bottom: 6.0),
@@ -850,8 +850,6 @@ void _handleTimeRangeChanged(TimeRange range) {
                   color: color,
                 ),
         ),
-
-                
                 SizedBox(width: 8),
                 SizedBox(
                   width: 85,

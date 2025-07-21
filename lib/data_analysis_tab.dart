@@ -134,7 +134,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
   
   // 获取分类数据
   Future<List<CategoryData>> _fetchCategoryData(String detectionType) async {
-    final url = Uri.parse('http://47.119.178.225:8090/api/v4/detector/result/category');
+    final url = Uri.parse('http://47.119.178.225:8090/api/v5/detector/result/category');
     
     final response = await http.post(
       url,
@@ -714,7 +714,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
                           Text(
                             '${item.idsCount}项 · ${item.percentage.toStringAsFixed(1)}%',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 8,
                               color: Colors.black54,
                               fontFamily: 'HarmonyOS_Sans',
                             ),
