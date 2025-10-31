@@ -246,20 +246,23 @@ class _RiskReportCardState extends State<RiskReportCard>
                     ),
                   ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                  child: Text(
-                    widget.detectionMode == 'AI' ? 'AI特征分析' : '风险提示',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'HarmonyOS_Sans',
+                // 精准(增强)模式下的“风险提示/AI特征分析”标题
+                if (widget.detectionMode == 'PRECISE')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                    child: Text(
+                      widget.detectionMode == 'AI' ? 'AI特征分析' : '风险提示',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'HarmonyOS_Sans',
+                      ),
                     ),
                   ),
-                ),
 
                 // Check feature points status and display appropriate message
-                if (!hasAnalysis || !hasFeaturePointsField)
+                if (widget.detectionMode == 'PRECISE' &&
+                    (!hasAnalysis || !hasFeaturePointsField))
                   // featurePoints 键不存在时显示检测失败信息
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -272,7 +275,7 @@ class _RiskReportCardState extends State<RiskReportCard>
                       ),
                     ),
                   )
-                else if (!hasFeaturePoints)
+                else if (widget.detectionMode == 'PRECISE' && !hasFeaturePoints)
                   // featurePoints 为空列表时显示无风险信息
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -287,23 +290,37 @@ class _RiskReportCardState extends State<RiskReportCard>
                       ),
                     ),
                   )
-                else
+                else if (widget.detectionMode == 'PRECISE')
                   // 存在风险特征点时显示特征点列表
                   ...result?.analysis.featurePoints
                           .map((point) => _buildFeaturePoint(point)) ??
                       [],
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Text(
-                    overallAnalysis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontFamily: 'HarmonyOS_Sans',
+                // 快速模式底部说明文字
+                if (widget.detectionMode != 'PRECISE')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: Text(
+                      '快速检测模式：基于机器学习模型的多类别置信度分析，上述结果按置信度从高到低排序。',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontFamily: 'HarmonyOS_Sans',
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: Text(
+                      overallAnalysis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        fontFamily: 'HarmonyOS_Sans',
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -362,7 +379,8 @@ class _RiskReportCardState extends State<RiskReportCard>
                 width: 8,
                 height: 8,
                 margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: dotColor, shape: BoxShape.circle),
               ),
               Expanded(
                 child: Text(
