@@ -53,7 +53,7 @@ class ServerStatusService {
         },
         body: jsonEncode({
           'token': token,
-          'data': {'serverId': 'ckj45d5gdg2f0dgc'}
+          'data': {'serverId': '3d5gt2f0dgc'}
         }),
       );
       if (response.statusCode == 200) {

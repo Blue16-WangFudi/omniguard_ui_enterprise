@@ -20,6 +20,11 @@ add_executable(${BINARY_NAME} WIN32
 # that need different build settings.
 apply_standard_settings(${BINARY_NAME})
 
+# 强制使用 UTF-8 解析源文件，避免中文字符串在 MSVC 下出现乱码
+if (MSVC)
+  target_compile_options(${BINARY_NAME} PRIVATE /utf-8)
+endif()
+
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MAJOR=${FLUTTER_VERSION_MAJOR}")
