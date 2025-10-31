@@ -24,19 +24,17 @@ class DetectionResult {
     required this.timeCost,
     required this.dataSource,
     DateTime? timestamp,
-  }) : 
-    this.analysis = analysis ?? DetectionAnalysis.fromJson(
-      analysisJson.isNotEmpty 
-        ? jsonDecode(analysisJson) 
-        : {'overall': '', 'featurePoints': [], 'suggestions': []}
-    ),
-    this.timestamp = timestamp ?? DateTime.now();
+  })  : this.analysis = analysis ??
+            DetectionAnalysis.fromJson(analysisJson.isNotEmpty
+                ? jsonDecode(analysisJson)
+                : {'overall': '', 'featurePoints': [], 'suggestions': []}),
+        this.timestamp = timestamp ?? DateTime.now();
 
   // Create detection result from JSON
   factory DetectionResult.fromJson(Map<String, dynamic> json) {
     final analysisText = json['analysis'] ?? '';
     Map<String, dynamic> analysisMap = {};
-    
+
     // Try to parse analysis as JSON if it's a string
     if (analysisText is String && analysisText.isNotEmpty) {
       try {
@@ -50,7 +48,7 @@ class DetectionResult {
         };
       }
     }
-    
+
     return DetectionResult(
       id: json['id'] ?? '',
       fileKey: json['fileKey'] ?? '',
@@ -61,9 +59,8 @@ class DetectionResult {
       analysis: DetectionAnalysis.fromJson(analysisMap),
       timeCost: json['timeCost'] ?? 0,
       dataSource: json['dataSource'] ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
-          : null,
+      timestamp:
+          json['timestamp'] != null ? DateTime.parse(json['timestamp']) : null,
     );
   }
 
@@ -97,7 +94,8 @@ class DetectionData {
   final List<DetectionResult> _results;
 
   // 存储原始检测结果列表用于向后兼容
-  List<DetectionResult> get results => _results.isNotEmpty ? _results : [toDetectionResult()];
+  List<DetectionResult> get results =>
+      _results.isNotEmpty ? _results : [toDetectionResult()];
   String get detectionType => detection_type;
 
   DetectionData({
@@ -111,9 +109,8 @@ class DetectionData {
     required this.dataSource,
     DateTime? timestamp,
     List<DetectionResult>? results,
-  }) : 
-    this.timestamp = timestamp ?? DateTime.now(),
-    this._results = results ?? [];
+  })  : this.timestamp = timestamp ?? DateTime.now(),
+        this._results = results ?? [];
 
   // Create detection data from JSON
   factory DetectionData.fromJson(Map<String, dynamic> json) {
@@ -121,8 +118,9 @@ class DetectionData {
     if (json.containsKey('results')) {
       // Handle old format with results array
       final resultsList = (json['results'] as List?)
-          ?.map((result) => DetectionResult.fromJson(result))
-          .toList() ?? [];
+              ?.map((result) => DetectionResult.fromJson(result))
+              .toList() ??
+          [];
 
       if (resultsList.isNotEmpty) {
         // Convert first result to the new format
@@ -156,29 +154,28 @@ class DetectionData {
         );
       }
     }
-    
+
     // Handle new format (direct properties)
     // Parse analysis
     Map<String, dynamic> analysisMap = {};
     if (json['analysis'] != null) {
-      analysisMap = json['analysis'] is String 
-          ? jsonDecode(json['analysis']) 
+      analysisMap = json['analysis'] is String
+          ? jsonDecode(json['analysis'])
           : json['analysis'];
     }
 
     // Parse suggestions
     List<String> suggestionsList = [];
     if (json['suggestions'] != null) {
-      suggestionsList = (json['suggestions'] as List)
-          .map((item) => item.toString())
-          .toList();
+      suggestionsList =
+          (json['suggestions'] as List).map((item) => item.toString()).toList();
     }
 
     // Parse dataSource
     Map<String, dynamic> dataSourceMap = {};
     if (json['dataSource'] != null) {
-      dataSourceMap = json['dataSource'] is String 
-          ? jsonDecode(json['dataSource']) 
+      dataSourceMap = json['dataSource'] is String
+          ? jsonDecode(json['dataSource'])
           : json['dataSource'];
     }
 
@@ -191,9 +188,8 @@ class DetectionData {
       detection_type: json['detection_type'] ?? 'RISK',
       timeCost: json['timeCost'] ?? 0,
       dataSource: DataSourceInfo.fromJson(dataSourceMap),
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
-          : null,
+      timestamp:
+          json['timestamp'] != null ? DateTime.parse(json['timestamp']) : null,
     );
   }
 
@@ -205,10 +201,12 @@ class DetectionData {
       'category': category,
       'analysis': {
         'overall': analysis.overall,
-        'featurePoints': analysis.featurePoints.map((point) => {
-          'keyword': point.keyword,
-          'description': point.description,
-        }).toList(),
+        'featurePoints': analysis.featurePoints
+            .map((point) => {
+                  'keyword': point.keyword,
+                  'description': point.description,
+                })
+            .toList(),
       },
       'suggestions': suggestions,
       'detection_type': detection_type,
@@ -222,10 +220,12 @@ class DetectionData {
   DetectionResult toDetectionResult() {
     final analysisJson = jsonEncode({
       'overall': analysis.overall,
-      'featurePoints': analysis.featurePoints.map((point) => {
-        'keyword': point.keyword,
-        'description': point.description,
-      }).toList(),
+      'featurePoints': analysis.featurePoints
+          .map((point) => {
+                'keyword': point.keyword,
+                'description': point.description,
+              })
+          .toList(),
       'suggestions': suggestions,
     });
 
@@ -266,7 +266,8 @@ class DetectionData {
   }
 
   // Create a new DetectionData instance with a list of DetectionResults
-  factory DetectionData.withResults(List<DetectionResult> results, String detectionType) {
+  factory DetectionData.withResults(
+      List<DetectionResult> results, String detectionType) {
     if (results.isEmpty) {
       return DetectionData(
         id: '',
@@ -278,7 +279,7 @@ class DetectionData {
         timeCost: 0,
         dataSource: DataSourceInfo.fromString(''),
         timestamp: DateTime.now(),
-        results: [], 
+        results: [],
       );
     }
 
@@ -293,7 +294,7 @@ class DetectionData {
       timeCost: firstResult.timeCost,
       dataSource: DataSourceInfo.fromString(firstResult.dataSource),
       timestamp: firstResult.timestamp,
-      results: results, 
+      results: results,
     );
   }
 }
@@ -312,12 +313,95 @@ class DetectorResponse {
 
   // Create detector response from JSON
   factory DetectorResponse.fromJson(Map<String, dynamic> json) {
-    DetectionData detectionData = DetectionData.fromJson(json['data']['summary'] ?? {});
-    detectionData.id=json['data']['id']?? '';
+    // Support two formats:
+    // 1) Precise/old format: data.summary
+    // 2) Fast format: data contains category.classify list
+    final dataObj = json['data'] ?? {};
+
+    if (dataObj is Map && dataObj.containsKey('summary')) {
+      // Existing precise format
+      DetectionData detectionData =
+          DetectionData.fromJson(dataObj['summary'] ?? {});
+      detectionData.id = dataObj['id'] ?? '';
+      return DetectorResponse(
+        status: json['status'] ?? '',
+        message: json['message'] ?? '',
+        data: detectionData,
+      );
+    }
+
+    // Handle FAST mode format with category.classify
+    final classifyList = (dataObj is Map)
+        ? ((dataObj['category'] != null && dataObj['category'] is Map)
+            ? (dataObj['category']['classify'] as List?)
+            : null)
+        : null;
+
+    if (classifyList != null) {
+      double topConfidence = 0.0;
+      String topCategory = '';
+      final featurePoints = <FeaturePoint>[];
+
+      for (final item in classifyList) {
+        if (item is Map<String, dynamic>) {
+          final cat = item['category']?.toString() ?? '';
+          final conf = (item['confidence'] ?? 0.0).toDouble();
+          final percent = '${(conf * 100).toStringAsFixed(1)}%';
+          featurePoints.add(FeaturePoint(keyword: cat, description: percent));
+          if (conf > topConfidence) {
+            topConfidence = conf;
+            topCategory = cat;
+          }
+        }
+      }
+
+      final analysis = DetectionAnalysis(
+        overall: '',
+        featurePoints: featurePoints,
+        suggestions: [],
+      );
+
+      final ds = dataObj['dataSource'] is Map<String, dynamic>
+          ? DataSourceInfo.fromJson(dataObj['dataSource'])
+          : DataSourceInfo.fromJson({});
+
+      final detectionData = DetectionData(
+        id: dataObj['id'] ?? '',
+        confidence: topConfidence,
+        category: topCategory,
+        analysis: analysis,
+        suggestions: [],
+        detection_type: dataObj['detection_type'] ?? 'RISK',
+        timeCost: dataObj['timeCost'] ?? 0,
+        dataSource: ds,
+        timestamp: DateTime.now(),
+      );
+
+      return DetectorResponse(
+        status: json['code']?.toString() ?? (json['status'] ?? ''),
+        message: json['msg']?.toString() ?? (json['message'] ?? ''),
+        data: detectionData,
+      );
+    }
+
+    // Fallback to empty data
+    final emptyData = DetectionData(
+      id: '',
+      confidence: 0.0,
+      category: '',
+      analysis:
+          DetectionAnalysis(overall: '', featurePoints: [], suggestions: []),
+      suggestions: [],
+      detection_type: 'RISK',
+      timeCost: 0,
+      dataSource: DataSourceInfo.fromJson({}),
+      timestamp: DateTime.now(),
+    );
+
     return DetectorResponse(
-      status: json['status'] ?? '',
-      message: json['message'] ?? '',
-      data: detectionData,
+      status: json['code']?.toString() ?? (json['status'] ?? ''),
+      message: json['msg']?.toString() ?? (json['message'] ?? ''),
+      data: emptyData,
     );
   }
 }
@@ -339,7 +423,8 @@ class DetectionAnalysis {
     List<FeaturePoint> points = [];
     if (pointsJson != null) {
       points = pointsJson
-          .map((pointJson) => FeaturePoint.fromJson(pointJson as Map<String, dynamic>))
+          .map((pointJson) =>
+              FeaturePoint.fromJson(pointJson as Map<String, dynamic>))
           .toList();
     }
 
@@ -435,7 +520,8 @@ class DataSource {
     List<FileInfo> files = [];
     if (filesJson != null) {
       files = filesJson
-          .map((fileJson) => FileInfo.fromJson(fileJson as Map<String, dynamic>))
+          .map(
+              (fileJson) => FileInfo.fromJson(fileJson as Map<String, dynamic>))
           .toList();
     }
     return DataSource(files: files);
