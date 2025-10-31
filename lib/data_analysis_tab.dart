@@ -51,7 +51,7 @@ class CategoryData {
   final int idsCount;
   final double percentage;
   final Color color;
-  
+
   CategoryData({
     required this.detectionType,
     required this.category,
@@ -66,42 +66,43 @@ class DataAnalysisTab extends StatefulWidget {
   _DataAnalysisTabState createState() => _DataAnalysisTabState();
 }
 
-class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProviderStateMixin {
+class _DataAnalysisTabState extends State<DataAnalysisTab>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   String _errorMessage = '';
-  
+
   // 风险数据和AIGC数据
   List<CategoryData> _riskData = [];
   List<CategoryData> _aiData = [];
-  
+
   // 动画控制器
   late AnimationController _animationController;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // 初始化动画控制器
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 800),
     );
-    
+
     _animation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
+
     _fetchData();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   // 获取数据
   Future<void> _fetchData() async {
     try {
@@ -109,19 +110,19 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         _isLoading = true;
         _errorMessage = '';
       });
-      
+
       // 并行发送两个请求
       final results = await Future.wait([
         _fetchCategoryData('RISK'),
         _fetchCategoryData('AI'),
       ]);
-      
+
       setState(() {
         _riskData = results[0];
         _aiData = results[1];
         _isLoading = false;
       });
-      
+
       // 启动动画
       _animationController.forward();
     } catch (e) {
@@ -131,11 +132,12 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       });
     }
   }
-  
+
   // 获取分类数据
   Future<List<CategoryData>> _fetchCategoryData(String detectionType) async {
-    final url = Uri.parse('http://47.119.178.225:8090/api/v5/detector/result/category');
-    
+    final url = Uri.parse(
+        'https://omniguard.blue16.cn/api/v5/detector/result/category');
+
     final response = await http.post(
       url,
       headers: {
@@ -145,30 +147,29 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       encoding: utf8,
       body: jsonEncode({
         'token': '0c97a6b8-9142-486c-a304-83a3e745614b',
-        'data': {
-          'detectionType': detectionType
-        }
+        'data': {'detectionType': detectionType}
       }),
     );
-    
+
     if (response.statusCode == 200) {
       final jsonData = jsonDecode(utf8.decode(response.bodyBytes));
-      
+
       if (jsonData['code'] == 'SUCCESS') {
         final List<dynamic> categories = jsonData['data'];
-        
+
         // 计算总ID数量
         int totalIds = 0;
         for (var category in categories) {
           totalIds += (category['ids'] as List).length;
         }
-        
+
         // 构建分类数据列表
         List<CategoryData> categoryDataList = categories.map((category) {
           final String categoryName = category['category'] ?? "Unknown";
           final List<dynamic> ids = category['ids'] as List;
-          final double percentage = totalIds > 0 ? ids.length / totalIds * 100 : 0;
-          
+          final double percentage =
+              totalIds > 0 ? ids.length / totalIds * 100 : 0;
+
           return CategoryData(
             detectionType: category['detectionType'],
             category: categoryName.isEmpty ? '未分类' : categoryName,
@@ -177,7 +178,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
             color: _getCategoryColor(categories.indexOf(category)),
           );
         }).toList();
-        
+
         // 合并小于5%的类别为"其他"
         return _mergeSmallCategories(categoryDataList);
       } else {
@@ -187,18 +188,18 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       throw Exception('请求失败，状态码: ${response.statusCode}');
     }
   }
-  
+
   // 合并小于5%的类别为"其他"
   List<CategoryData> _mergeSmallCategories(List<CategoryData> originalData) {
     // 如果数据不足，直接返回
     if (originalData.length <= 1) {
       return originalData;
     }
-    
+
     // 分离小于5%和大于等于5%的类别
     List<CategoryData> mainCategories = [];
     List<CategoryData> smallCategories = [];
-    
+
     for (var category in originalData) {
       if (category.percentage < 5.0) {
         smallCategories.add(category);
@@ -206,17 +207,19 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         mainCategories.add(category);
       }
     }
-    
+
     // 如果没有小类别，直接返回原始数据
     if (smallCategories.isEmpty) {
       return originalData;
     }
-    
+
     // 合并小类别
-    int totalSmallIds = smallCategories.fold(0, (sum, item) => sum + item.idsCount);
-    double totalSmallPercentage = smallCategories.fold(0.0, (sum, item) => sum + item.percentage);
+    int totalSmallIds =
+        smallCategories.fold(0, (sum, item) => sum + item.idsCount);
+    double totalSmallPercentage =
+        smallCategories.fold(0.0, (sum, item) => sum + item.percentage);
     String detectionType = originalData.first.detectionType;
-    
+
     // 创建"其他"类别
     CategoryData otherCategory = CategoryData(
       detectionType: detectionType,
@@ -225,16 +228,16 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       percentage: totalSmallPercentage,
       color: Color(0xFF9E9E9E), // 使用灰色表示"其他"
     );
-    
+
     // 添加"其他"类别到主类别列表
     mainCategories.add(otherCategory);
-    
+
     // 按百分比降序排序
     mainCategories.sort((a, b) => b.percentage.compareTo(a.percentage));
-    
+
     return mainCategories;
   }
-  
+
   // 获取分类颜色
   Color _getCategoryColor(int index) {
     final colors = [
@@ -251,10 +254,10 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       Color(0xFF7CB342), // Light Green
       Color(0xFFFFCA28), // Amber
     ];
-    
+
     return colors[index % colors.length];
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -266,7 +269,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       child: _buildContent(),
     );
   }
-  
+
   Widget _buildContent() {
     if (_isLoading) {
       return Center(
@@ -294,7 +297,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         ),
       );
     }
-    
+
     if (_errorMessage.isNotEmpty) {
       return Center(
         child: Container(
@@ -355,72 +358,69 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         ),
       );
     }
-    
-    return 
-    SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-      child:Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '数据分析仪表盘',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'HarmonyOS_Sans',
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            '全智卫安风险监测与AIGC检测分析概览',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black54,
-              fontFamily: 'HarmonyOS_Sans',
-            ),
-          ),
-          SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  return Column(
-                    children: [
-                      Container(
-                        height: 350,  
-                        child: _buildChartSection(
-                          '风险数据占比',
-                          _riskData,
-                          'RISK',
+
+    return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '数据分析仪表盘',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'HarmonyOS_Sans',
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '全智卫安风险监测与AIGC检测分析概览',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  fontFamily: 'HarmonyOS_Sans',
+                ),
+              ),
+              SizedBox(height: 24),
+              LayoutBuilder(builder: (context, constraints) {
+                return AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return Column(
+                      children: [
+                        Container(
+                          height: 350,
+                          child: _buildChartSection(
+                            '风险数据占比',
+                            _riskData,
+                            'RISK',
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 24),
-                      Container(
-                        height: 350,  
-                        child: _buildChartSection(
-                          'AIGC检测占比',
-                          _aiData,
-                          'AI',
+                        SizedBox(height: 24),
+                        Container(
+                          height: 350,
+                          child: _buildChartSection(
+                            'AIGC检测占比',
+                            _aiData,
+                            'AI',
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            }
+                      ],
+                    );
+                  },
+                );
+              }),
+            ],
           ),
-        ],
-      ),
-      )
-    );
+        ));
   }
-  
+
   // 构建图表区域
-  Widget _buildChartSection(String title, List<CategoryData> data, String type) {
+  Widget _buildChartSection(
+      String title, List<CategoryData> data, String type) {
     if (data.isEmpty) {
       return Container(
         decoration: BoxDecoration(
@@ -457,7 +457,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         ),
       );
     }
-    
+
     return Container(
       // height: 600,
       decoration: BoxDecoration(
@@ -480,88 +480,95 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
               top: -100,
               right: -50,
               child: AnimatedBuilder(
-                animation: _animation,
-                builder: (context, _) {
-                  return Transform.rotate(
-                    angle: _animation.value * math.pi * 2,
-                    child: Opacity(
-                      opacity: 0.02,
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              type == 'RISK' ? Color(0xFF4285F4) : Color(0xFFEA4335),
-                              Colors.transparent,
-                            ],
+                  animation: _animation,
+                  builder: (context, _) {
+                    return Transform.rotate(
+                      angle: _animation.value * math.pi * 2,
+                      child: Opacity(
+                        opacity: 0.02,
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                type == 'RISK'
+                                    ? Color(0xFF4285F4)
+                                    : Color(0xFFEA4335),
+                                Colors.transparent,
+                              ],
+                            ),
                           ),
                         ),
                       ),
+                    );
+                  }),
+            ),
+            Positioned(
+              left: 20,
+              top: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'HarmonyOS_Sans',
+                      color: Colors.black87,
                     ),
-                  );
-                }
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '共${data.map((e) => e.idsCount).reduce((a, b) => a + b)}条数据',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                      fontFamily: 'HarmonyOS_Sans',
+                    ),
+                  ),
+                ],
               ),
             ),
-                        Positioned(
-              left:20,top:20,
-              child:                       
-                Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'HarmonyOS_Sans',
-                              color: Colors.black87,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '共${data.map((e) => e.idsCount).reduce((a, b) => a + b)}条数据',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                              fontFamily: 'HarmonyOS_Sans',
-                            ),
-                          ),
-                        ],
+            Positioned(
+              top: 20,
+              right: 20,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: type == 'RISK'
+                      ? Color(0xFF4285F4).withOpacity(0.1)
+                      : Color(0xFFEA4335).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      type == 'RISK' ? Icons.security : Icons.android,
+                      size: 16,
+                      color: type == 'RISK'
+                          ? Color(0xFF4285F4)
+                          : Color(0xFFEA4335),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      type == 'RISK' ? '风险监测' : 'AIGC检测',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: type == 'RISK'
+                            ? Color(0xFF4285F4)
+                            : Color(0xFFEA4335),
+                        fontFamily: 'HarmonyOS_Sans',
                       ),
+                    ),
+                  ],
+                ),
               ),
-              Positioned(
-                top:20,right:20,child:
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: type == 'RISK' 
-                              ? Color(0xFF4285F4).withOpacity(0.1) 
-                              : Color(0xFFEA4335).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              type == 'RISK' ? Icons.security : Icons.android,
-                              size: 16,
-                              color: type == 'RISK' ? Color(0xFF4285F4) : Color(0xFFEA4335),
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              type == 'RISK' ? '风险监测' : 'AIGC检测',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: type == 'RISK' ? Color(0xFF4285F4) : Color(0xFFEA4335),
-                                fontFamily: 'HarmonyOS_Sans',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),),
+            ),
 
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -570,23 +577,20 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                    ],
+                    children: [],
                   ),
                   SizedBox(height: 24),
                   Flexible(
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center
-                      ,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Flexible(
                           flex: 3,
                           child: AnimatedBuilder(
-                            animation: _animation,
-                            builder: (context, _) {
-                              return _buildPieChart(data);
-                            }
-                          ),
+                              animation: _animation,
+                              builder: (context, _) {
+                                return _buildPieChart(data);
+                              }),
                         ),
                         // 图例
                         SizedBox(width: 50),
@@ -594,12 +598,11 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
                           flex: 2,
                           child: _buildLegend(data),
                         ),
-                        
+
                         // Spacer(),
                       ],
                     ),
                   ),
-                  
                 ],
               ),
             ),
@@ -608,7 +611,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       ),
     );
   }
-  
+
   // 构建圆环图
   Widget _buildPieChart(List<CategoryData> data) {
     return AspectRatio(
@@ -629,10 +632,12 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
                 color: Colors.white,
                 fontFamily: 'HarmonyOS_Sans',
               ),
-              badgeWidget: item.percentage > 5 ? _Badge(
-                item.category,
-                animation: _animation,
-              ) : null,
+              badgeWidget: item.percentage > 5
+                  ? _Badge(
+                      item.category,
+                      animation: _animation,
+                    )
+                  : null,
               badgePositionPercentageOffset: 1.5,
             );
           }).toList(),
@@ -641,7 +646,7 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
       ),
     );
   }
-  
+
   // 构建图例
   Widget _buildLegend(List<CategoryData> data) {
     return Container(
@@ -659,11 +664,11 @@ class _DataAnalysisTabState extends State<DataAnalysisTab> with SingleTickerProv
         itemBuilder: (context, index) {
           final item = data[index];
           final progress = _animation.value;
-          
+
           // 交错动画效果
-          final delayedProgress = math.min(1.0, math.max(0.0, 
-              (progress - (index * 0.1)) / (1 - (index * 0.1))));
-          
+          final delayedProgress = math.min(1.0,
+              math.max(0.0, (progress - (index * 0.1)) / (1 - (index * 0.1))));
+
           return AnimatedOpacity(
             duration: Duration(milliseconds: 300),
             opacity: delayedProgress,
